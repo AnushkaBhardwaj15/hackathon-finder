@@ -22,12 +22,24 @@ export type DeadlineType = (typeof DEADLINE_TYPES)[number];
 
 export type Urgency = "normal" | "warning" | "urgent" | "overdue" | "completed";
 
+export const REMINDER_KEYS = [
+  "sevenDaysBefore",
+  "threeDaysBefore",
+  "oneDayBefore",
+  "threeHoursBefore",
+] as const;
+
+export type ReminderKey = (typeof REMINDER_KEYS)[number];
+
+export type DeadlineReminders = Record<ReminderKey, boolean>;
+
 export interface Deadline {
   id: string;
   title: string;
   type: DeadlineType;
   dateTime: string;
   completed: boolean;
+  reminders: DeadlineReminders;
 }
 
 export interface Requirement {

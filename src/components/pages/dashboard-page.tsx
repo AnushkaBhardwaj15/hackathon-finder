@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Flame, Plus } from "lucide-react";
+import { Bell, Flame, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Countdown } from "@/components/countdown";
 import { EmptyState } from "@/components/empty-state";
@@ -13,9 +13,10 @@ import {
   getAttentionDeadlines,
   getUpcomingDeadlines,
 } from "@/lib/countdown";
-import { formatDateTime } from "@/lib/dates";
+import { formatDateTime, formatReminderWhen } from "@/lib/dates";
 import { greetingForHour } from "@/lib/dates";
 import { USER_NAME } from "@/lib/labels";
+import { getScheduledReminders } from "@/lib/reminders";
 import type { Deadline, Hackathon } from "@/lib/types";
 
 type DeadlineRef = {
@@ -36,7 +37,9 @@ export function DashboardPage() {
     hackathon.deadlines.map((deadline) => ({ hackathon, deadline })),
   );
   const attention = getAttentionDeadlines(allDeadlineRefs, now);
-  const upcoming = getUpcomingDeadlines(allDeadlineRefs, now, 5);
+  const attentionIds = new Set(attention.map(({ deadline }) => deadline.id));
+  const upcomingReminders = getScheduledReminders(hackathons, now, 5);
+  const upcoming = getUpcomingDeadlines(allDeadlineRefs, now, 5, attentionIds);
   const active = hackathons.filter((hackathon) =>
     ["registered", "building", "submitted"].includes(hackathon.status),
   );

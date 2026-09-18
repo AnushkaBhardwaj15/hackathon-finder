@@ -1,5 +1,6 @@
 import type { Deadline, DeadlineType, Hackathon, HackathonStatus, Requirement } from "@/lib/types";
 import { DEADLINE_TYPES, HACKATHON_STATUSES } from "@/lib/types";
+import { normalizeReminders, remindersWereMissing } from "@/lib/reminders";
 
 export const HACKATHONS_STORAGE_KEY = "hacktracker:hackathons";
 const CHANGE_EVENT = "hacktracker:change";
@@ -47,6 +48,7 @@ function parseDeadline(value: unknown): Deadline | null {
     type: asDeadlineType(value.type),
     dateTime,
     completed: asBoolean(value.completed),
+    reminders: normalizeReminders(value.reminders),
   };
 }
 
@@ -101,12 +103,33 @@ function parseHackathon(value: unknown): Hackathon | null {
 }
 
 export function parseHackathons(raw: string): Hackathon[] {
+  return parseHackathonsResult(raw).hackathons;
+}
+
+function parseHackathonsResult(raw: string): { hackathons: Hackathon[]; migrated: boolean } {
   try {
     const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed.map(parseHackathon).filter((item): item is Hackathon => item !== null);
+    if (!Array.isArray(parsed)) return { hackathons: [], migrated: false };
+
+    let migrated = false;
+    const hackathons = parsed
+      .map((value) => {
+        if (isRecord(value) && Array.isArray(value.deadlines)) {
+          if (
+            value.deadlines.some(
+              (deadline) => isRecord(deadline) && remindersWereMissing(deadline.reminders),
+            )
+          ) {
+            migrated = true;
+          }
+        }
+        return parseHackathon(value);
+      })
+      .filter((item): item is Hackathon => item !== null);
+
+    return { hackathons, migrated };
   } catch {
-    return [];
+    return { hackathons: [], migrated: false };
   }
 }
 
@@ -131,8 +154,15 @@ function writeAll(hackathons: Hackathon[]): void {
 export function getHackathonsSnapshot(): Hackathon[] {
   const raw = readRaw();
   if (raw === snapshotRaw) return snapshotCache;
+  const { hackathons, migrated } = parseHackathonsResult(raw);
   snapshotRaw = raw;
-  snapshotCache = parseHackathons(raw);
+  snapshotCache = hackathons;
+  if (migrated && canUseStorage()) {
+    const nextRaw = JSON.stringify(hackathons);
+    window.localStorage.setItem(HACKATHONS_STORAGE_KEY, nextRaw);
+    snapshotRaw = nextRaw;
+    snapshotCache = hackathons;
+  }
   return snapshotCache;
 }
 

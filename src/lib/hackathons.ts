@@ -1,6 +1,7 @@
 import { createId } from "@/lib/ids";
 import { hackathonStorage } from "@/lib/storage";
-import type { Deadline, Hackathon, HackathonDraft, Requirement } from "@/lib/types";
+import type { Deadline, DeadlineReminders, Hackathon, HackathonDraft, Requirement } from "@/lib/types";
+import { createDefaultReminders } from "@/lib/reminders";
 
 function touch(hackathon: Hackathon): Hackathon {
   return { ...hackathon, updatedAt: new Date().toISOString() };
@@ -19,6 +20,10 @@ export const hackathonService = {
     const now = new Date().toISOString();
     const hackathon: Hackathon = {
       ...draft,
+      deadlines: draft.deadlines.map((deadline) => ({
+        ...deadline,
+        reminders: deadline.reminders ?? createDefaultReminders(),
+      })),
       id: createId(),
       createdAt: now,
       updatedAt: now,
@@ -62,7 +67,31 @@ export const hackathonService = {
     return hackathonStorage.save(
       touch({
         ...existing,
-        deadlines: [...existing.deadlines, { ...deadline, id: createId() }],
+        deadlines: [
+          ...existing.deadlines,
+          {
+            ...deadline,
+            id: createId(),
+            reminders: deadline.reminders ?? createDefaultReminders(),
+          },
+        ],
+      }),
+    );
+  }
+
+  updateDeadlineReminders(
+    hackathonId: string,
+    deadlineId: string,
+    reminders: DeadlineReminders,
+  ): Hackathon | undefined {
+    const existing = hackathonStorage.getById(hackathonId);
+    if (!existing) return undefined;
+    return hackathonStorage.save(
+      touch({
+        ...existing,
+        deadlines: existing.deadlines.map((deadline) =>
+          deadline.id === deadlineId ? { ...deadline, reminders } : deadline,
+        ),
       }),
     );
   },

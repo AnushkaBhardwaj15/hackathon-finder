@@ -29,6 +29,7 @@ import { Countdown } from "@/components/countdown";
 import { DeadlineItem } from "@/components/deadline-item";
 import { ProgressIndicator } from "@/components/progress-indicator";
 import { QuickLinks } from "@/components/quick-links";
+import { ReminderSettings } from "@/components/reminder-settings";
 import { RequirementItem } from "@/components/requirement-item";
 import { StatusBadge } from "@/components/status-badge";
 import { useHackathon } from "@/hooks/use-hackathons";
@@ -36,7 +37,8 @@ import { useNow } from "@/hooks/use-now";
 import { getCountdownInfo, getNearestIncompleteDeadline } from "@/lib/countdown";
 import { combineLocalDateTime, formatDateTime } from "@/lib/dates";
 import { DEADLINE_TYPE_LABELS } from "@/lib/labels";
-import { DEADLINE_TYPES, type DeadlineType } from "@/lib/types";
+import { createDefaultReminders } from "@/lib/reminders";
+import { DEADLINE_TYPES, type DeadlineReminders, type DeadlineType } from "@/lib/types";
 
 export function HackathonDetailPage({ id }: { id: string }) {
   const router = useRouter();
@@ -48,6 +50,7 @@ export function HackathonDetailPage({ id }: { id: string }) {
     setDeadlineCompleted,
     addDeadline,
     removeDeadline,
+    updateDeadlineReminders,
     setRequirementCompleted,
     addRequirement,
     removeRequirement,
@@ -154,6 +157,9 @@ export function HackathonDetailPage({ id }: { id: string }) {
                 key={deadline.id}
                 deadline={deadline}
                 onToggle={(completed) => setDeadlineCompleted(hackathon.id, deadline.id, completed)}
+                onRemindersChange={(reminders) =>
+                  updateDeadlineReminders(hackathon.id, deadline.id, reminders)
+                }
                 onDelete={() => removeDeadline(hackathon.id, deadline.id)}
               />
             ))}
@@ -268,6 +274,7 @@ function AddDeadlineDialog({
     type: DeadlineType;
     dateTime: string;
     completed: boolean;
+    reminders: DeadlineReminders;
   }) => void;
 }) {
   const [title, setTitle] = useState("");
@@ -275,6 +282,7 @@ function AddDeadlineDialog({
   const [date, setDate] = useState("");
   const [time, setTime] = useState("23:59");
   const [completed, setCompleted] = useState(false);
+  const [reminders, setReminders] = useState<DeadlineReminders>(createDefaultReminders);
   const [error, setError] = useState("");
 
   function reset() {
@@ -283,6 +291,7 @@ function AddDeadlineDialog({
     setDate("");
     setTime("23:59");
     setCompleted(false);
+    setReminders(createDefaultReminders());
     setError("");
   }
 
@@ -347,6 +356,7 @@ function AddDeadlineDialog({
                 type,
                 dateTime: combineLocalDateTime(date, time),
                 completed,
+                reminders,
               });
               reset();
             }}

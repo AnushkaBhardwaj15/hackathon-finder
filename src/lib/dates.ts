@@ -1,3 +1,5 @@
+const DAY = 24 * 60 * 60 * 1000;
+
 export function formatDateTime(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "Invalid date";
@@ -8,6 +10,57 @@ export function formatDateTime(iso: string): string {
     hour: "numeric",
     minute: "2-digit",
   }).format(date);
+}
+
+export function formatTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "Invalid time";
+
+  return new Intl.DateTimeFormat(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
+export function formatMonthDay(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "Invalid date";
+
+  return new Intl.DateTimeFormat(undefined, {
+    month: "long",
+    day: "numeric",
+  }).format(date);
+}
+
+export function startOfLocalDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+export function isSameLocalDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+export function isTomorrow(target: Date, now: Date): boolean {
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  return isSameLocalDay(target, tomorrow);
+}
+
+export function calendarDaysUntil(target: Date, now: Date): number {
+  return Math.round((startOfLocalDay(target).getTime() - startOfLocalDay(now).getTime()) / DAY);
+}
+
+export function formatReminderWhen(iso: string, now: Date = new Date()): string {
+  const target = new Date(iso);
+  if (Number.isNaN(target.getTime())) return "Unknown time";
+  const time = formatTime(iso);
+  if (isSameLocalDay(target, now)) return `Today · ${time}`;
+  if (isTomorrow(target, now)) return `Tomorrow · ${time}`;
+  return `${formatMonthDay(iso)} · ${time}`;
 }
 
 export function formatDateTimeFull(iso: string): string {

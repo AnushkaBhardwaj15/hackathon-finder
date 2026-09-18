@@ -19,8 +19,10 @@ import { createId } from "@/lib/ids";
 import { combineLocalDateTime, toLocalDateInput, toLocalTimeInput } from "@/lib/dates";
 import { DEADLINE_TYPE_LABELS, STATUS_LABELS } from "@/lib/labels";
 import { isValidUrl, normalizeUrl } from "@/lib/urls";
+import { createDefaultReminders } from "@/lib/reminders";
+import { ReminderSettings } from "@/components/reminder-settings";
 import { DEADLINE_TYPES, HACKATHON_STATUSES } from "@/lib/types";
-import type { DeadlineType, Hackathon, HackathonDraft, HackathonStatus } from "@/lib/types";
+import type { DeadlineReminders, DeadlineType, Hackathon, HackathonDraft, HackathonStatus } from "@/lib/types";
 
 interface DeadlineDraft {
   key: string;
@@ -29,6 +31,7 @@ interface DeadlineDraft {
   date: string;
   time: string;
   completed: boolean;
+  reminders: DeadlineReminders;
 }
 
 interface RequirementDraft {
@@ -99,6 +102,7 @@ function draftsFromHackathon(hackathon?: Hackathon) {
         date: toLocalDateInput(deadline.dateTime),
         time: toLocalTimeInput(deadline.dateTime) || "23:59",
         completed: deadline.completed,
+        reminders: deadline.reminders,
       })) ?? [],
     requirements:
       hackathon?.requirements.map((requirement) => ({
@@ -142,6 +146,7 @@ export function HackathonForm({
         date: "",
         time: "23:59",
         completed: false,
+        reminders: createDefaultReminders(),
       },
     ]);
   }
@@ -222,6 +227,7 @@ export function HackathonForm({
         type: deadline.type,
         dateTime: combineLocalDateTime(deadline.date, deadline.time),
         completed: deadline.completed,
+        reminders: deadline.reminders,
       })),
       requirements: requirements.map((requirement) => ({
         id: requirement.key,
@@ -414,6 +420,16 @@ export function HackathonForm({
                     />
                   </Field>
                 </div>
+                <ReminderSettings
+                  value={deadline.reminders}
+                  onChange={(reminders) =>
+                    setDeadlines((current) =>
+                      current.map((item) =>
+                        item.key === deadline.key ? { ...item, reminders } : item,
+                      ),
+                    )
+                  }
+                />
                 <div className="flex justify-end">
                   <Button
                     type="button"

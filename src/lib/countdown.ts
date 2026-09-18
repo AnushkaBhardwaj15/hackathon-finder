@@ -1,4 +1,5 @@
 import type { Deadline, Urgency } from "@/lib/types";
+import { calendarDaysUntil, formatTime, isSameLocalDay, isTomorrow } from "@/lib/dates";
 
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
@@ -47,27 +48,25 @@ export function formatCountdownLabel(target: Date, now: Date, msUntil: number): 
     return `${minutes} ${minutes === 1 ? "minute" : "minutes"} left`;
   }
 
-  if (msUntil < DAY) {
-    const hours = Math.max(1, Math.round(msUntil / HOUR));
-    return `${hours} ${hours === 1 ? "hour" : "hours"} left`;
+  if (isSameLocalDay(target, now)) {
+    if (msUntil < 6 * HOUR) {
+      const hours = Math.max(1, Math.round(msUntil / HOUR));
+      return `${hours} ${hours === 1 ? "hour" : "hours"} left`;
+    }
+    return `Today · ${formatTime(target.toISOString())}`;
   }
 
   if (isTomorrow(target, now)) {
     return "Tomorrow";
   }
 
-  const days = Math.round(msUntil / DAY);
-  return `${days} ${days === 1 ? "day" : "days"} left`;
-}
+  if (msUntil < DAY) {
+    const hours = Math.max(1, Math.round(msUntil / HOUR));
+    return `${hours} ${hours === 1 ? "hour" : "hours"} left`;
+  }
 
-export function isTomorrow(target: Date, now: Date): boolean {
-  const tomorrow = new Date(now);
-  tomorrow.setDate(now.getDate() + 1);
-  return (
-    target.getFullYear() === tomorrow.getFullYear() &&
-    target.getMonth() === tomorrow.getMonth() &&
-    target.getDate() === tomorrow.getDate()
-  );
+  const days = Math.max(2, calendarDaysUntil(target, now));
+  return `${days} ${days === 1 ? "day" : "days"} left`;
 }
 
 export function getNearestIncompleteDeadline(
@@ -110,10 +109,11 @@ export function getUpcomingDeadlines<T extends { deadline: Deadline }>(
   items: T[],
   now: Date = new Date(),
   limit = 5,
+  excludeIds: Set<string> = new Set(),
 ): T[] {
   return items
     .filter(({ deadline }) => {
-      if (deadline.completed) return false;
+      if (deadline.completed || excludeIds.has(deadline.id)) return false;
       const msUntil = new Date(deadline.dateTime).getTime() - now.getTime();
       return Number.isFinite(msUntil) && msUntil >= 0;
     })

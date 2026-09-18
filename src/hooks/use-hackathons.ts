@@ -7,7 +7,7 @@ import {
   getServerHackathonsSnapshot,
   subscribeHackathons,
 } from "@/lib/storage";
-import type { Deadline, HackathonDraft, Requirement } from "@/lib/types";
+import type { Deadline, DeadlineReminders, HackathonDraft, Requirement } from "@/lib/types";
 
 export function useHackathons() {
   const hackathons = useSyncExternalStore(
@@ -38,6 +38,11 @@ export function useHackathons() {
         hackathonService.addDeadline(hackathonId, deadline),
       removeDeadline: (hackathonId: string, deadlineId: string) =>
         hackathonService.removeDeadline(hackathonId, deadlineId),
+      updateDeadlineReminders: (
+        hackathonId: string,
+        deadlineId: string,
+        reminders: DeadlineReminders,
+      ) => hackathonService.updateDeadlineReminders(hackathonId, deadlineId, reminders),
       setRequirementCompleted: (
         hackathonId: string,
         requirementId: string,
